@@ -28,18 +28,18 @@ export async function extractItems(file: File): Promise<Item[]> {
 type Row = { y: number; cells: Item[]; text: string };
 
 function toRows(items: Item[]): Row[] {
-  const buckets = new Map<number, Item[]>();
-  for (const it of items) {
-    const key = Math.round(it.y / 4);
-    if (!buckets.has(key)) buckets.set(key, []);
-    buckets.get(key)!.push(it);
+  const sorted = [...items].sort((a, b) => a.y - b.y);
+  const rows: Row[] = [];
+  for (const it of sorted) {
+    const last = rows[rows.length - 1];
+    if (last && Math.abs(it.y - last.y) <= 5) last.cells.push(it);
+    else rows.push({ y: it.y, cells: [it], text: "" });
   }
-  return [...buckets.entries()]
-    .sort((a, b) => a[0] - b[0])
-    .map(([k, cells]) => {
-      cells.sort((a, b) => a.x - b.x);
-      return { y: k * 4, cells, text: cells.map((c) => c.str).join(" ").replace(/\s+/g, " ").trim() };
-    });
+  for (const r of rows) {
+    r.cells.sort((a, b) => a.x - b.x);
+    r.text = r.cells.map((c) => c.str).join(" ").replace(/\s+/g, " ").trim();
+  }
+  return rows;
 }
 
 const num = (s: string) => Number(String(s).replace(/[^0-9.\-]/g, "")) || 0;
