@@ -14,11 +14,13 @@ export async function extractItems(file: File): Promise<Item[]> {
   for (let p = 1; p <= doc.numPages; p++) {
     const page = await doc.getPage(p);
     const content = await page.getTextContent();
+    const pageHeight = Number(page.view[3] ?? 792);
     for (const it of content.items as any[]) {
       if (typeof it.str !== "string" || !it.str.trim()) continue;
-      out.push({ x: it.transform[4], y: offset + (page.view[3] - it.transform[5]), str: it.str.trim() });
+      const tr = it.transform as number[];
+      out.push({ x: Number(tr[4]), y: offset + (pageHeight - Number(tr[5])), str: it.str.trim() });
     }
-    offset += page.view[3];
+    offset += pageHeight;
   }
   return out;
 }

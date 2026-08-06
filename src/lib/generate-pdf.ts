@@ -1,130 +1,213 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import { money, totals, type Proposal } from "./proposal";
+import { extended, money, totals, type Party, type Proposal } from "./proposal";
 
-const INK: [number, number, number] = [22, 30, 42];
-const MUTED: [number, number, number] = [110, 122, 138];
-const ACCENT: [number, number, number] = [193, 122, 47];
+const INK: [number, number, number] = [0, 0, 0];
+const BLUE: [number, number, number] = [21, 76, 160];
+const GREY: [number, number, number] = [217, 217, 217];
+const LINE: [number, number, number] = [130, 130, 130];
 
-export function generateProposalPdf(p: Proposal) {
-  const doc = new jsPDF({ unit: "pt", format: "a4" });
+export function buildProposalDoc(p: Proposal) {
+  const doc = new jsPDF({ unit: "pt", format: "letter" });
   const W = doc.internal.pageSize.getWidth();
-  const M = 48;
-  let y = 56;
+  const M = 36;
+  const right = W - M;
 
-  doc.setFont("times", "bold");
-  doc.setFontSize(24);
+  // ---- Header -------------------------------------------------------
+  if (p.logo) {
+    try {
+      doc.addImage(p.logo, "PNG", M, 26, 150, 44);
+    } catch {
+      /* ignore unsupported image */
+    }
+  }
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
   doc.setTextColor(...INK);
-  doc.text(p.title || "Sales Proposal", M, y);
+  doc.text(`Sales Proposal ${p.proposalNumber}`.trim(), W / 2, 50, { align: "center" });
+  doc.setFontSize(13);
+  doc.text(p.vendorName || "", right, 50, { align: "right" });
 
-  y += 18;
-  doc.setDrawColor(...ACCENT);
-  doc.setLineWidth(2);
-  doc.line(M, y, M + 64, y);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(...MUTED);
-  const metaRight = [
-    p.proposalNumber && `Proposal #${p.proposalNumber}`,
-    p.date && `Date: ${p.date}`,
-    p.validUntil && `Valid until: ${p.validUntil}`,
-  ].filter(Boolean) as string[];
-  metaRight.forEach((line, i) => doc.text(line, W - M, 46 + i * 13, { align: "right" }));
-
-  y += 26;
-  const colW = (W - M * 2 - 24) / 2;
-  const block = (label: string, name: string, details: string, x: number) => {
-    let by = y;
-    doc.setFontSize(8);
-    doc.setTextColor(...MUTED);
-    doc.text(label.toUpperCase(), x, by);
-    by += 14;
-    doc.setFontSize(11);
+  // ---- Meta row -----------------------------------------------------
+  const meta: [string, string][] = [
+    ["Date", p.date],
+    ["Terms", p.terms],
+    ["Valid for", p.validFor],
+    ["SO", p.so],
+  ];
+  const metaY = 100;
+  const colStep = (W - M * 2) / 4;
+  meta.forEach(([label, value], i) => {
+    const x = M + 30 + i * colStep;
     doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.text(label, x, metaY, { align: "right" });
+    doc.setFont("helvetica", "normal");
+    doc.text(value || "", x + 12, metaY);
+  });
+
+  // ---- Party blocks --------------------------------------------------
+  const boxY = 118;
+  const boxW = (W - M * 2) / 3;
+  const headH = 18;
+  const bodyH = 118;
+  const attnH = 60;
+
+  doc.setDrawColor(...LINE);
+  doc.setLineWidth(0.8);
+  doc.setFillColor(...GREY);
+  doc.rect(M, boxY, boxW * 3, headH, "FD");
+  ["Customer", "Ship To", "Proposal By"].forEach((t, i) => {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
     doc.setTextColor(...INK);
-    doc.text(name || "—", x, by);
-    by += 14;
+    doc.text(t, M + boxW * i + boxW / 2, boxY + 12.5, { align: "center" });
+    if (i > 0) doc.line(M + boxW * i, boxY, M + boxW * i, boxY + headH + bodyH + attnH);
+  });
+  doc.rect(M, boxY + headH, boxW * 3, bodyH);
+  doc.rect(M, boxY + headH + bodyH, boxW * 3, attnH);
+
+  const drawParty = (party: Party, i: number) => {
+    const x = M + boxW * i + 8;
+    const maxW = boxW - 16;
+    let y = boxY + headH + 16;
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
-    doc.setTextColor(...MUTED);
-    doc.text(doc.splitTextToSize(details || "", colW), x, by);
-    return by + doc.splitTextToSize(details || "", colW).length * 12;
+    const lines = [party.name, ...party.address.split("\n")].filter((l) => l !== undefined);
+    for (const l of lines.slice(0, 6)) {
+      doc.text(doc.splitTextToSize(l || "", maxW)[0] ?? "", x, y);
+      y += 14;
+    }
+    let ay = boxY + headH + bodyH + 16;
+    if (party.attn) {
+      doc.text("Attn:", x, ay);
+      doc.text(doc.splitTextToSize(party.attn, maxW - 44), x + 44, ay);
+      ay += 12;
+    }
+    if (party.email) {
+      doc.text("Email:", x, ay);
+      const em = doc.splitTextToSize(party.email, maxW - 44);
+      doc.text(em, x + 44, ay);
+    }
   };
-  const y1 = block("From", p.companyName, p.companyDetails, M);
-  const y2 = block("Prepared for", p.clientName, p.clientDetails, M + colW + 24);
-  y = Math.max(y1, y2) + 18;
+  drawParty(p.customer, 0);
+  drawParty(p.shipTo, 1);
+  drawParty(p.proposalBy, 2);
 
+  let y = boxY + headH + bodyH + attnH + 26;
+
+  // ---- Custom fields --------------------------------------------------
   if (p.customFields.length) {
     doc.setFontSize(9);
     p.customFields.forEach((f, i) => {
-      const x = i % 2 === 0 ? M : M + colW + 24;
-      if (i % 2 === 0 && i > 0) y += 14;
-      doc.setTextColor(...MUTED);
-      doc.text(`${f.label}: `, x, y);
-      doc.setTextColor(...INK);
-      doc.text(f.value || "—", x + doc.getTextWidth(`${f.label}: `), y);
+      const x = M + (i % 3) * boxW;
+      if (i % 3 === 0 && i > 0) y += 14;
+      doc.setFont("helvetica", "bold");
+      doc.text(`${f.label}:`, x, y);
+      doc.setFont("helvetica", "normal");
+      doc.text(f.value || "", x + doc.getTextWidth(`${f.label}: `) + 4, y);
     });
-    y += 24;
+    y += 22;
   }
 
-  const t = totals(p);
+  // ---- Items table -----------------------------------------------------
   autoTable(doc, {
     startY: y,
-    head: [["Description", "Qty", "Unit price", "Amount"]],
+    head: [["Line", "Item", "Mfgr", "Description", "Qty", "List Price", "Disc %", "Unit Price", "Extended"]],
     body: p.items.map((i) => [
+      i.line,
+      i.item,
+      i.mfgr,
       i.description,
-      String(i.quantity),
-      money(i.unitPrice, p.currency),
-      money(i.quantity * i.unitPrice, p.currency),
+      String(i.qty),
+      money(i.listPrice),
+      money(i.discPct),
+      money(i.unitPrice),
+      money(extended(i)),
     ]),
     theme: "plain",
-    styles: { font: "helvetica", fontSize: 10, cellPadding: 8, textColor: INK },
-    headStyles: { fontStyle: "bold", fontSize: 8, textColor: MUTED, lineWidth: { bottom: 1 }, lineColor: [220, 224, 230] },
-    bodyStyles: { lineWidth: { bottom: 0.5 }, lineColor: [235, 238, 242] },
+    styles: { font: "helvetica", fontSize: 8.5, cellPadding: { top: 4, bottom: 4, left: 2, right: 2 }, textColor: INK },
+    headStyles: {
+      fontStyle: "bold",
+      fontSize: 8.5,
+      textColor: BLUE,
+      lineWidth: { bottom: 0.8 },
+      lineColor: LINE,
+    },
     columnStyles: {
-      1: { halign: "right", cellWidth: 50 },
-      2: { halign: "right", cellWidth: 90 },
-      3: { halign: "right", cellWidth: 100 },
+      0: { cellWidth: 30 },
+      1: { cellWidth: 90 },
+      2: { cellWidth: 55 },
+      4: { halign: "right", cellWidth: 28 },
+      5: { halign: "right", cellWidth: 50 },
+      6: { halign: "right", cellWidth: 36 },
+      7: { halign: "right", cellWidth: 56 },
+      8: { halign: "right", cellWidth: 62 },
     },
     margin: { left: M, right: M },
   });
 
-  y = (doc as any).lastAutoTable.finalY + 18;
-  const rows: [string, string, boolean?][] = [
-    ["Subtotal", money(t.subtotal, p.currency)],
-    ...(t.discount ? ([["Discount", `-${money(t.discount, p.currency)}`]] as [string, string][]) : []),
-    ...(p.taxRate ? ([[`Tax (${p.taxRate}%)`, money(t.tax, p.currency)]] as [string, string][]) : []),
-    ["Total", money(t.total, p.currency), true],
+  y = (doc as any).lastAutoTable.finalY;
+
+  // ---- Totals block -----------------------------------------------------
+  const t = totals(p);
+  const totalRows: [string, string, boolean][] = [
+    ["Total Sale", money(t.totalSale), true],
+    ["Freight", money(t.freight), false],
+    ["Your Price", `$ ${money(t.yourPrice)}`, true],
   ];
-  rows.forEach(([label, val, strong]) => {
-    doc.setFont("helvetica", strong ? "bold" : "normal");
-    doc.setFontSize(strong ? 13 : 10);
-    doc.setTextColor(...(strong ? INK : MUTED));
-    doc.text(label, W - M - 130, y, { align: "right" });
+  const blockW = 260;
+  const rowH = 16;
+  const blockX = right - blockW;
+  doc.setFillColor(...GREY);
+  doc.rect(blockX, y, blockW, rowH * totalRows.length, "F");
+  totalRows.forEach(([label, value, bold], i) => {
+    const ry = y + rowH * i + 11.5;
+    doc.setFont("helvetica", bold ? "bold" : "normal");
+    doc.setFontSize(9);
     doc.setTextColor(...INK);
-    doc.text(val, W - M, y, { align: "right" });
-    y += strong ? 24 : 16;
+    doc.text(label, blockX + blockW - 100, ry, { align: "right" });
+    doc.text(value, right - 4, ry, { align: "right" });
+    doc.setDrawColor(...LINE);
+    doc.setLineWidth(0.6);
+    doc.line(blockX + blockW - 96, y + rowH * (i + 1), right, y + rowH * (i + 1));
   });
 
-  const section = (title: string, body: string) => {
-    if (!body.trim()) return;
-    y += 10;
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(8);
-    doc.setTextColor(...MUTED);
-    doc.text(title.toUpperCase(), M, y);
-    y += 14;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.setTextColor(...INK);
-    const lines = doc.splitTextToSize(body, W - M * 2);
-    doc.text(lines, M, y);
-    y += lines.length * 13;
-  };
-  section("Notes", p.notes);
-  section("Terms", p.terms);
+  y += rowH * totalRows.length + 22;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.text(p.currencyNote || "", M, y);
 
-  const name = `${(p.clientName || "proposal").replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-proposal.pdf`;
-  doc.save(name);
+  // ---- Signature block ---------------------------------------------------
+  y += 46;
+  doc.setFont("helvetica", "normal");
+  doc.text("Full Name", M + 70, y);
+  doc.line(M + 130, y + 3, M + 320, y + 3);
+  doc.text("Signature", M + 380, y);
+  doc.line(M + 440, y + 3, right, y + 3);
+
+  y += 20;
+  doc.setFontSize(8.5);
+  const note = doc.splitTextToSize(p.footerNote || "", W - M * 2);
+  doc.text(note, W / 2, y, { align: "center" });
+
+  y += note.length * 11 + 26;
+  doc.setFontSize(9);
+  doc.text("PO", M + 20, y);
+  doc.line(M + 90, y + 3, M + 370, y + 3);
+
+  const pageH = doc.internal.pageSize.getHeight();
+  doc.setFontSize(8);
+  doc.text("1 of 1", right, pageH - 28, { align: "right" });
+
+  return doc;
+}
+
+export function downloadProposalPdf(p: Proposal) {
+  const doc = buildProposalDoc(p);
+  doc.save(`sales-proposal-${p.proposalNumber || "draft"}.pdf`);
+}
+
+export function proposalPreviewUrl(p: Proposal) {
+  return buildProposalDoc(p).output("bloburl").toString();
 }
