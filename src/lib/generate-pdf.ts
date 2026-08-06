@@ -127,7 +127,7 @@ export function buildProposalDoc(p: Proposal) {
         money(extended(i)),
       ],
       ...(i.subLines ?? []).map((s) => [
-        `   ${s.line}`,
+        "",
         `   ${s.item}`,
         s.mfgr,
         s.description,

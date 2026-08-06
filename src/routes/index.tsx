@@ -119,7 +119,6 @@ function PartyCard({
 function ProposalEditor() {
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [loading, setLoading] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const logoRef = useRef<HTMLInputElement>(null);
 
@@ -172,7 +171,7 @@ function ProposalEditor() {
 
   const refreshPreview = () => {
     if (!proposal) return;
-    setPreviewUrl(proposalPreviewUrl(proposal));
+    window.open(proposalPreviewUrl(proposal), "_blank", "noopener,noreferrer");
   };
 
   if (!proposal) {
@@ -443,12 +442,7 @@ function ProposalEditor() {
 
                     {(item.subLines ?? []).map((sub) => (
                       <tr key={sub.id} className="align-top bg-muted/40">
-                        <td className="py-1.5 pr-2 pl-5">
-                          <Input
-                            value={sub.line}
-                            onChange={(e) => updateSubLine(item, sub.id, { line: e.target.value })}
-                          />
-                        </td>
+                        <td className="py-1.5 pr-2 pl-5" />
                         <td className="py-1.5 pr-2">
                           <Input
                             value={sub.item}
@@ -658,12 +652,6 @@ function ProposalEditor() {
             </div>
           </div>
         </Card>
-
-        {previewUrl && (
-          <Card className="gap-0 overflow-hidden p-0">
-            <iframe title="Proposal preview" src={previewUrl} className="h-[900px] w-full" />
-          </Card>
-        )}
       </div>
     </main>
   );
