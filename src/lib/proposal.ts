@@ -1,4 +1,4 @@
-export type LineItem = {
+export type SubLine = {
   id: string;
   line: string;
   item: string;
@@ -9,6 +9,20 @@ export type LineItem = {
   discPct: number;
   unitPrice: number;
 };
+
+export type LineItem = {
+  id: string;
+  line: string;
+  item: string;
+  mfgr: string;
+  description: string;
+  qty: number;
+  listPrice: number;
+  discPct: number;
+  unitPrice: number;
+  subLines: SubLine[];
+};
+
 
 export type Party = {
   name: string;
@@ -51,7 +65,21 @@ export const emptyItem = (index: number): LineItem => ({
   listPrice: 0,
   discPct: 0,
   unitPrice: 0,
+  subLines: [],
 });
+
+export const emptySubLine = (parentLine: string, index: number): SubLine => ({
+  id: uid(),
+  line: `${parentLine || "0001"}.${index + 1}`,
+  item: "",
+  mfgr: "",
+  description: "",
+  qty: 1,
+  listPrice: 0,
+  discPct: 0,
+  unitPrice: 0,
+});
+
 
 export function emptyProposal(): Proposal {
   return {
@@ -74,12 +102,16 @@ export function emptyProposal(): Proposal {
   };
 }
 
-export const extended = (i: LineItem) => i.qty * i.unitPrice;
+export const extended = (i: { qty: number; unitPrice: number }) => i.qty * i.unitPrice;
+
+export const lineTotal = (i: LineItem) =>
+  extended(i) + (i.subLines ?? []).reduce((s, sl) => s + extended(sl), 0);
 
 export function totals(p: Proposal) {
-  const totalSale = p.items.reduce((s, i) => s + extended(i), 0);
+  const totalSale = p.items.reduce((s, i) => s + lineTotal(i), 0);
   return { totalSale, freight: p.freight || 0, yourPrice: totalSale + (p.freight || 0) };
 }
+
 
 export const money = (n: number) =>
   n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });

@@ -140,9 +140,10 @@ export function itemsToProposal(items: Item[]): Proposal {
       const lead = r.cells.filter((c) => c.x < xMfgr - 20).map((c) => c.str);
       const mfgr = r.cells.filter((c) => c.x >= xMfgr - 20 && c.x < xDesc - 20).map((c) => c.str).join(" ");
       const desc = r.cells.filter((c) => c.x >= xDesc - 20 && c.x < xQty - 20).map((c) => c.str).join(" ");
+      const isSub = /^\d{3,4}\.\d+$/.test(lead[0] ?? "") && nums.length >= 3;
       const isNew = /^\d{3,4}$/.test(lead[0] ?? "") && nums.length >= 3;
-      if (isNew) {
-        parsed.push({
+      if (isSub && parsed.length) {
+        parsed[parsed.length - 1]!.subLines.push({
           id: uid(),
           line: lead[0]!,
           item: lead.slice(1).join(" "),
@@ -153,9 +154,23 @@ export function itemsToProposal(items: Item[]): Proposal {
           discPct: num(nums[2]!.str),
           unitPrice: num(nums[3]?.str ?? "0"),
         });
+      } else if (isNew) {
+        parsed.push({
+          id: uid(),
+          line: lead[0]!,
+          item: lead.slice(1).join(" "),
+          mfgr,
+          description: desc,
+          qty: num(nums[0]!.str),
+          listPrice: num(nums[1]!.str),
+          discPct: num(nums[2]!.str),
+          unitPrice: num(nums[3]?.str ?? "0"),
+          subLines: [],
+        });
       } else if (parsed.length && desc) {
         parsed[parsed.length - 1]!.description += ` ${desc}`;
       }
+
     }
     if (parsed.length) p.items = parsed;
   }
