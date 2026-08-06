@@ -17,6 +17,8 @@ import {
   emptyProposal,
   emptySubLine,
   extended,
+  lineTotal,
+
   money,
   totals,
   uid,
