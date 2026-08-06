@@ -65,7 +65,21 @@ export const emptyItem = (index: number): LineItem => ({
   listPrice: 0,
   discPct: 0,
   unitPrice: 0,
+  subLines: [],
 });
+
+export const emptySubLine = (parentLine: string, index: number): SubLine => ({
+  id: uid(),
+  line: `${parentLine || "0001"}.${index + 1}`,
+  item: "",
+  mfgr: "",
+  description: "",
+  qty: 1,
+  listPrice: 0,
+  discPct: 0,
+  unitPrice: 0,
+});
+
 
 export function emptyProposal(): Proposal {
   return {
