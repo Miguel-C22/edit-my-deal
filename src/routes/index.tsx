@@ -350,93 +350,201 @@ function ProposalEditor() {
               </thead>
               <tbody>
                 {proposal.items.map((item) => (
-                  <tr key={item.id} className="border-t border-border align-top">
-                    <td className="py-2 pr-2">
-                      <Input
-                        value={item.line}
-                        onChange={(e) => updateItem(item.id, { line: e.target.value })}
-                      />
-                    </td>
-                    <td className="py-2 pr-2">
-                      <Input
-                        value={item.item}
-                        onChange={(e) => updateItem(item.id, { item: e.target.value })}
-                      />
-                    </td>
-                    <td className="py-2 pr-2">
-                      <Input
-                        value={item.mfgr}
-                        onChange={(e) => updateItem(item.id, { mfgr: e.target.value })}
-                      />
-                    </td>
-                    <td className="py-2 pr-2">
-                      <Textarea
-                        rows={2}
-                        value={item.description}
-                        onChange={(e) => updateItem(item.id, { description: e.target.value })}
-                      />
-                    </td>
-                    <td className="py-2 pr-2">
-                      <Input
-                        type="number"
-                        className="text-right"
-                        value={item.qty}
-                        onChange={(e) => updateItem(item.id, { qty: Number(e.target.value) || 0 })}
-                      />
-                    </td>
-                    <td className="py-2 pr-2">
-                      <Input
-                        type="number"
-                        step="0.01"
-                        className="text-right"
-                        value={item.listPrice}
-                        onChange={(e) =>
-                          updateItem(item.id, { listPrice: Number(e.target.value) || 0 })
-                        }
-                      />
-                    </td>
-                    <td className="py-2 pr-2">
-                      <Input
-                        type="number"
-                        step="0.01"
-                        className="text-right"
-                        value={item.discPct}
-                        onChange={(e) =>
-                          updateItem(item.id, { discPct: Number(e.target.value) || 0 })
-                        }
-                      />
-                    </td>
-                    <td className="py-2 pr-2">
-                      <Input
-                        type="number"
-                        step="0.01"
-                        className="text-right"
-                        value={item.unitPrice}
-                        onChange={(e) =>
-                          updateItem(item.id, { unitPrice: Number(e.target.value) || 0 })
-                        }
-                      />
-                    </td>
-                    <td className="py-2 pr-2 text-right font-medium tabular-nums">
-                      {money(extended(item))}
-                    </td>
-                    <td className="py-2 text-right">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Remove line item"
-                        onClick={() =>
-                          set(
-                            "items",
-                            proposal.items.filter((i) => i.id !== item.id),
-                          )
-                        }
-                      >
-                        <Trash2 className="text-destructive" />
-                      </Button>
-                    </td>
-                  </tr>
+                  <Fragment key={item.id}>
+                    <tr className="border-t border-border align-top">
+                      <td className="py-2 pr-2">
+                        <Input
+                          value={item.line}
+                          onChange={(e) => updateItem(item.id, { line: e.target.value })}
+                        />
+                      </td>
+                      <td className="py-2 pr-2">
+                        <Input
+                          value={item.item}
+                          onChange={(e) => updateItem(item.id, { item: e.target.value })}
+                        />
+                      </td>
+                      <td className="py-2 pr-2">
+                        <Input
+                          value={item.mfgr}
+                          onChange={(e) => updateItem(item.id, { mfgr: e.target.value })}
+                        />
+                      </td>
+                      <td className="py-2 pr-2">
+                        <Textarea
+                          rows={2}
+                          value={item.description}
+                          onChange={(e) => updateItem(item.id, { description: e.target.value })}
+                        />
+                      </td>
+                      <td className="py-2 pr-2">
+                        <Input
+                          type="number"
+                          className="text-right"
+                          value={item.qty}
+                          onChange={(e) => updateItem(item.id, { qty: Number(e.target.value) || 0 })}
+                        />
+                      </td>
+                      <td className="py-2 pr-2">
+                        <Input
+                          type="number"
+                          step="0.01"
+                          className="text-right"
+                          value={item.listPrice}
+                          onChange={(e) =>
+                            updateItem(item.id, { listPrice: Number(e.target.value) || 0 })
+                          }
+                        />
+                      </td>
+                      <td className="py-2 pr-2">
+                        <Input
+                          type="number"
+                          step="0.01"
+                          className="text-right"
+                          value={item.discPct}
+                          onChange={(e) =>
+                            updateItem(item.id, { discPct: Number(e.target.value) || 0 })
+                          }
+                        />
+                      </td>
+                      <td className="py-2 pr-2">
+                        <Input
+                          type="number"
+                          step="0.01"
+                          className="text-right"
+                          value={item.unitPrice}
+                          onChange={(e) =>
+                            updateItem(item.id, { unitPrice: Number(e.target.value) || 0 })
+                          }
+                        />
+                      </td>
+                      <td className="py-2 pr-2 text-right font-medium tabular-nums">
+                        {money(extended(item))}
+                      </td>
+                      <td className="py-2 text-right">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Remove line item"
+                          onClick={() =>
+                            set(
+                              "items",
+                              proposal.items.filter((i) => i.id !== item.id),
+                            )
+                          }
+                        >
+                          <Trash2 className="text-destructive" />
+                        </Button>
+                      </td>
+                    </tr>
+
+                    {(item.subLines ?? []).map((sub) => (
+                      <tr key={sub.id} className="align-top bg-muted/40">
+                        <td className="py-1.5 pr-2 pl-5">
+                          <Input
+                            value={sub.line}
+                            onChange={(e) => updateSubLine(item, sub.id, { line: e.target.value })}
+                          />
+                        </td>
+                        <td className="py-1.5 pr-2">
+                          <Input
+                            value={sub.item}
+                            onChange={(e) => updateSubLine(item, sub.id, { item: e.target.value })}
+                          />
+                        </td>
+                        <td className="py-1.5 pr-2">
+                          <Input
+                            value={sub.mfgr}
+                            onChange={(e) => updateSubLine(item, sub.id, { mfgr: e.target.value })}
+                          />
+                        </td>
+                        <td className="py-1.5 pr-2">
+                          <Textarea
+                            rows={2}
+                            value={sub.description}
+                            onChange={(e) =>
+                              updateSubLine(item, sub.id, { description: e.target.value })
+                            }
+                          />
+                        </td>
+                        <td className="py-1.5 pr-2">
+                          <Input
+                            type="number"
+                            className="text-right"
+                            value={sub.qty}
+                            onChange={(e) =>
+                              updateSubLine(item, sub.id, { qty: Number(e.target.value) || 0 })
+                            }
+                          />
+                        </td>
+                        <td className="py-1.5 pr-2">
+                          <Input
+                            type="number"
+                            step="0.01"
+                            className="text-right"
+                            value={sub.listPrice}
+                            onChange={(e) =>
+                              updateSubLine(item, sub.id, { listPrice: Number(e.target.value) || 0 })
+                            }
+                          />
+                        </td>
+                        <td className="py-1.5 pr-2">
+                          <Input
+                            type="number"
+                            step="0.01"
+                            className="text-right"
+                            value={sub.discPct}
+                            onChange={(e) =>
+                              updateSubLine(item, sub.id, { discPct: Number(e.target.value) || 0 })
+                            }
+                          />
+                        </td>
+                        <td className="py-1.5 pr-2">
+                          <Input
+                            type="number"
+                            step="0.01"
+                            className="text-right"
+                            value={sub.unitPrice}
+                            onChange={(e) =>
+                              updateSubLine(item, sub.id, { unitPrice: Number(e.target.value) || 0 })
+                            }
+                          />
+                        </td>
+                        <td className="py-1.5 pr-2 text-right tabular-nums">
+                          {money(extended(sub))}
+                        </td>
+                        <td className="py-1.5 text-right">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Remove sub line"
+                            onClick={() => removeSubLine(item, sub.id)}
+                          >
+                            <Trash2 className="text-destructive" />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+
+                    <tr className="bg-muted/20">
+                      <td colSpan={8} className="pb-2 pl-5">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 text-xs"
+                          onClick={() => addSubLine(item)}
+                        >
+                          <CornerDownRight /> Add sub line to {item.line || "line"}
+                        </Button>
+                      </td>
+                      <td className="pb-2 pr-2 text-right text-xs font-semibold tabular-nums">
+                        {(item.subLines ?? []).length > 0 ? money(lineTotal(item)) : ""}
+                      </td>
+                      <td />
+                    </tr>
+                  </Fragment>
                 ))}
+
               </tbody>
             </table>
           </div>
