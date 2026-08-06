@@ -1,67 +1,85 @@
 export type LineItem = {
   id: string;
+  line: string;
+  item: string;
+  mfgr: string;
   description: string;
-  quantity: number;
+  qty: number;
+  listPrice: number;
+  discPct: number;
   unitPrice: number;
 };
 
-export type CustomField = {
-  id: string;
-  label: string;
-  value: string;
+export type Party = {
+  name: string;
+  address: string; // multiline
+  attn: string;
+  email: string;
 };
 
+export type CustomField = { id: string; label: string; value: string };
+
 export type Proposal = {
-  title: string;
-  companyName: string;
-  companyDetails: string;
-  clientName: string;
-  clientDetails: string;
+  logo: string; // data URL
+  vendorName: string;
   proposalNumber: string;
   date: string;
-  validUntil: string;
-  currency: string;
-  taxRate: number;
-  discount: number;
-  notes: string;
   terms: string;
-  customFields: CustomField[];
+  validFor: string;
+  so: string;
+  customer: Party;
+  shipTo: Party;
+  proposalBy: Party;
   items: LineItem[];
+  freight: number;
+  currencyNote: string;
+  footerNote: string;
+  customFields: CustomField[];
 };
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
 
+export const emptyParty = (): Party => ({ name: "", address: "", attn: "", email: "" });
+
+export const emptyItem = (index: number): LineItem => ({
+  id: uid(),
+  line: String(index + 1).padStart(4, "0"),
+  item: "",
+  mfgr: "",
+  description: "",
+  qty: 1,
+  listPrice: 0,
+  discPct: 0,
+  unitPrice: 0,
+});
+
 export function emptyProposal(): Proposal {
   return {
-    title: "Sales Proposal",
-    companyName: "",
-    companyDetails: "",
-    clientName: "",
-    clientDetails: "",
+    logo: "",
+    vendorName: "",
     proposalNumber: "",
-    date: new Date().toISOString().slice(0, 10),
-    validUntil: "",
-    currency: "$",
-    taxRate: 0,
-    discount: 0,
-    notes: "",
+    date: new Date().toLocaleDateString("en-US"),
     terms: "",
+    validFor: "",
+    so: "0",
+    customer: emptyParty(),
+    shipTo: emptyParty(),
+    proposalBy: emptyParty(),
+    items: [emptyItem(0)],
+    freight: 0,
+    currencyNote: "All Currency Totals are in US Dollar",
+    footerNote:
+      "You may use this form as a purchase order. Initial the items you want to purchase, enter Purchase Order (if any), sign, then mail, email or fax back to us",
     customFields: [],
-    items: [{ id: uid(), description: "", quantity: 1, unitPrice: 0 }],
   };
 }
 
+export const extended = (i: LineItem) => i.qty * i.unitPrice;
+
 export function totals(p: Proposal) {
-  const subtotal = p.items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
-  const discount = Math.min(p.discount || 0, subtotal);
-  const taxed = subtotal - discount;
-  const tax = taxed * ((p.taxRate || 0) / 100);
-  return { subtotal, discount, tax, total: taxed + tax };
+  const totalSale = p.items.reduce((s, i) => s + extended(i), 0);
+  return { totalSale, freight: p.freight || 0, yourPrice: totalSale + (p.freight || 0) };
 }
 
-export function money(n: number, currency: string) {
-  return `${currency}${n.toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-}
+export const money = (n: number) =>
+  n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
