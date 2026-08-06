@@ -114,17 +114,31 @@ export function buildProposalDoc(p: Proposal) {
   autoTable(doc, {
     startY: y,
     head: [["Line", "Item", "Mfgr", "Description", "Qty", "List Price", "Disc %", "Unit Price", "Extended"]],
-    body: p.items.map((i) => [
-      i.line,
-      i.item,
-      i.mfgr,
-      i.description,
-      String(i.qty),
-      money(i.listPrice),
-      money(i.discPct),
-      money(i.unitPrice),
-      money(extended(i)),
+    body: p.items.flatMap((i) => [
+      [
+        i.line,
+        i.item,
+        i.mfgr,
+        i.description,
+        String(i.qty),
+        money(i.listPrice),
+        money(i.discPct),
+        money(i.unitPrice),
+        money(extended(i)),
+      ],
+      ...(i.subLines ?? []).map((s) => [
+        `   ${s.line}`,
+        `   ${s.item}`,
+        s.mfgr,
+        s.description,
+        String(s.qty),
+        money(s.listPrice),
+        money(s.discPct),
+        money(s.unitPrice),
+        money(extended(s)),
+      ]),
     ]),
+
     theme: "plain",
     styles: { font: "helvetica", fontSize: 8.5, cellPadding: { top: 4, bottom: 4, left: 2, right: 2 }, textColor: INK },
     headStyles: {
