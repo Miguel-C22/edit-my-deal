@@ -1,4 +1,4 @@
-export type LineItem = {
+export type SubLine = {
   id: string;
   line: string;
   item: string;
@@ -9,6 +9,20 @@ export type LineItem = {
   discPct: number;
   unitPrice: number;
 };
+
+export type LineItem = {
+  id: string;
+  line: string;
+  item: string;
+  mfgr: string;
+  description: string;
+  qty: number;
+  listPrice: number;
+  discPct: number;
+  unitPrice: number;
+  subLines: SubLine[];
+};
+
 
 export type Party = {
   name: string;
