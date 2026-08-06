@@ -14,6 +14,7 @@ import { DEFAULT_LOGO } from "@/lib/default-logo";
 import {
   emptyItem,
   emptyProposal,
+  emptySubLine,
   extended,
   money,
   totals,
@@ -21,7 +22,9 @@ import {
   type LineItem,
   type Party,
   type Proposal,
+  type SubLine,
 } from "@/lib/proposal";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
