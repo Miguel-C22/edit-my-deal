@@ -102,12 +102,16 @@ export function emptyProposal(): Proposal {
   };
 }
 
-export const extended = (i: LineItem) => i.qty * i.unitPrice;
+export const extended = (i: { qty: number; unitPrice: number }) => i.qty * i.unitPrice;
+
+export const lineTotal = (i: LineItem) =>
+  extended(i) + (i.subLines ?? []).reduce((s, sl) => s + extended(sl), 0);
 
 export function totals(p: Proposal) {
-  const totalSale = p.items.reduce((s, i) => s + extended(i), 0);
+  const totalSale = p.items.reduce((s, i) => s + lineTotal(i), 0);
   return { totalSale, freight: p.freight || 0, yourPrice: totalSale + (p.freight || 0) };
 }
+
 
 export const money = (n: number) =>
   n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
