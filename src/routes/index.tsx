@@ -153,6 +153,20 @@ function ProposalEditor() {
       p ? { ...p, items: p.items.map((i) => (i.id === id ? { ...i, ...patch } : i)) } : p,
     );
 
+  const addSubLine = (item: LineItem) =>
+    updateItem(item.id, {
+      subLines: [...(item.subLines ?? []), emptySubLine(item.line, (item.subLines ?? []).length)],
+    });
+
+  const updateSubLine = (item: LineItem, subId: string, patch: Partial<SubLine>) =>
+    updateItem(item.id, {
+      subLines: (item.subLines ?? []).map((s) => (s.id === subId ? { ...s, ...patch } : s)),
+    });
+
+  const removeSubLine = (item: LineItem, subId: string) =>
+    updateItem(item.id, { subLines: (item.subLines ?? []).filter((s) => s.id !== subId) });
+
+
   const refreshPreview = () => {
     if (!proposal) return;
     setPreviewUrl(proposalPreviewUrl(proposal));
