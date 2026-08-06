@@ -62,8 +62,9 @@ export function itemsToProposal(items: Item[]): Proposal {
   p.proposalNumber = (titleRow.match(/sales proposal\s*#?\s*([\w-]+)/i)?.[1] ?? "").trim();
   const headerRow = rows.find((r) => /sales proposal/i.test(r.text));
   if (headerRow) {
-    const rightMost = headerRow.cells[headerRow.cells.length - 1];
-    if (rightMost && !/sales proposal|\d{3,}/i.test(rightMost.str)) p.vendorName = rightMost.str;
+    const maxX = Math.max(...items.map((i) => i.x));
+    const rightCells = headerRow.cells.filter((c) => c.x > maxX * 0.55 && !/^\d{3,}$/.test(c.str));
+    p.vendorName = rightCells.map((c) => c.str).join(" ").trim();
   }
 
   p.date = valueAfter(rows, "Date") || p.date;
@@ -85,13 +86,15 @@ export function itemsToProposal(items: Item[]): Proposal {
   const headRow = rows.find((r) => /customer/i.test(r.text) && /ship to/i.test(r.text));
   const itemsHead = rows.findIndex((r) => /qty/i.test(r.text) && /(unit price|extended)/i.test(r.text));
   if (headRow) {
-    const xs = ["customer", "ship to", "proposal by"].map(
-      (label) => headRow.cells.find((c) => c.str.toLowerCase().startsWith(label.split(" ")[0]!))?.x ?? 0,
+    const xs = ["customer", "ship", "proposal"].map(
+      (label) => headRow.cells.find((c) => c.str.toLowerCase().startsWith(label))?.x ?? 0,
     );
+    const mid01 = (xs[0]! + xs[1]!) / 2;
+    const mid12 = (xs[1]! + xs[2]!) / 2;
     const bounds = [
-      [xs[0]! - 40, xs[1]! - 40],
-      [xs[1]! - 40, xs[2]! - 40],
-      [xs[2]! - 40, Infinity],
+      [-Infinity, mid01],
+      [mid01, mid12],
+      [mid12, Infinity],
     ];
     const startY = headRow.y;
     const endY = itemsHead >= 0 ? rows[itemsHead]!.y : Infinity;
